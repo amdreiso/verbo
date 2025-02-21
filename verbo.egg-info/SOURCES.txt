@@ -1,0 +1,6 @@
+setup.py
+verbo.egg-info/PKG-INFO
+verbo.egg-info/SOURCES.txt
+verbo.egg-info/dependency_links.txt
+verbo.egg-info/entry_points.txt
+verbo.egg-info/top_level.txt

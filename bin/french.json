@@ -1,0 +1,29 @@
+{
+    "name": "french",
+    "word_list": [
+        {
+            "word": "bonjour",
+            "translation": "good morning"
+        },
+        {
+            "word": "dans",
+            "translation": "in"
+        },
+        {
+            "word": "aigle",
+            "translation": "eagle"
+        },
+        {
+            "word": "noir",
+            "translation": "black"
+        },
+        {
+            "word": "sur",
+            "translation": "on"
+        },
+        {
+            "word": "je suis tres",
+            "translation": "i am very"
+        }
+    ]
+}

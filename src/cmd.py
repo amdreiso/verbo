@@ -113,7 +113,7 @@ def run_command(value, cmode):
 
                 print("Word: " + token['word'])
                 guess = input("Guess: ")
-                if guess == token['translation']:
+                if guess.lower() == token['translation'].lower():
                     print(CmdColor.OKGREEN + "Right answer!" + CmdColor.ENDC)
                 else:
                     print(CmdColor.FAIL + "Wrong answer!" + CmdColor.ENDC)

@@ -4,6 +4,8 @@ import language
 import json
 import os
 import random
+
+from deep_translator import GoogleTranslator
 from app import APP_VERSION
 
 home = os.path.expanduser("~")
@@ -24,6 +26,17 @@ class CmdColor:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+def get_translation():
+    word = input("word: ")
+    lang = input("original language: ")
+    target = input("target language: ")
+
+    translation = GoogleTranslator(source=lang, target=target).translate(word)
+    print("Translation: ", translation)
+
+
 
 
 def run_command(value, cmode):
@@ -68,6 +81,9 @@ def run_command(value, cmode):
 
                     mode.set_mode(mode.Mode.LANGUAGE)
                     language.set_language(FOLDER + file + ".json", content)
+
+            case "translate":
+                get_translation()
 
             case "mode":
                 print(cmode)
@@ -147,6 +163,34 @@ def run_command(value, cmode):
                             return False
                 
                 print("Could't find: " + word)
+            
+            case "edit":
+                word = input("word to edit: ")
+                for i in language.language_data['word_list']:
+                    if i['word'] == word or i['translation'] == word:
+                        print(str(i))
+
+                        print("Leave input blank to not change original string")
+                        new_word = input("new word: ")
+                        new_translation = input("new translation: ")
+
+                        if (new_word != ""):
+                            i["word"] = new_word
+
+                        if (new_translation != ""):
+                            i["translation"] = new_translation
+
+                        with open(language.language_file, 'w') as file:
+                            json.dump(language.language_data, file, indent=4)
+                            print("edited to '" + str(i) + "'")
+
+                            return False
+                
+                print("Could't find: " + word)
+
+            case "translate":
+                get_translation()
+            
 
             case "exit":
                 mode.set_mode(mode.Mode.NORMAL)

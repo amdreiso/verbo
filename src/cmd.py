@@ -83,6 +83,15 @@ def run_command(value, cmode):
                     mode.set_mode(mode.Mode.LANGUAGE)
                     language.set_language(FOLDER + file + ".json", content)
 
+            case "del":
+                file = input("file: ")
+                if (not os.path.exists(FOLDER + file + ".json")):
+                    print("File not found, or file is not a json file")
+                    return False
+                
+                os.remove(FOLDER + file + ".json")
+                print("File deleted successfully")
+
             case "translate":
                 get_translation()
 
@@ -94,7 +103,7 @@ def run_command(value, cmode):
                 kill = True
 
             case _:
-                print("Command not found")
+                print("Invalid command!")
 
 
     if cmode == mode.Mode.LANGUAGE:
@@ -122,7 +131,7 @@ def run_command(value, cmode):
                 print("Translation: " + token['translation'])
 
             case "gg":
-                if len(language.language_data) == 0: 
+                if len(language.language_data['word_list']) == 0: 
                     print("Language has no words")
                     return False
 
@@ -205,6 +214,6 @@ def run_command(value, cmode):
                     print(i)
 
             case _:
-                print("Command not found")
+                print("Invalid command!")
 
 

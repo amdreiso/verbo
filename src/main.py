@@ -20,7 +20,7 @@ def loop():
 # Greetings
 def main():
     print("")
-    print("Welcome to Verbo!")
+    print("Welcome to \033[95mVerbo!\033[0m")
     print("An application made for memorizing and guessing vocabulary!")
     print("Type 'help' for instructions.")
     print("")

@@ -29,14 +29,12 @@ class CmdColor:
 
 
 def get_translation():
-    word = input("word: ")
+    word = input(CmdColor.HEADER+"word: "+CmdColor.ENDC)
     lang = input("original language: ")
     target = input("target language: ")
 
     translation = GoogleTranslator(source=lang, target=target).translate(word)
     print("Translation: ", translation)
-
-
 
 
 def run_command(value, cmode):
@@ -145,6 +143,19 @@ def run_command(value, cmode):
                 else:
                     print(CmdColor.FAIL + "Wrong answer!" + CmdColor.ENDC)
                     print(CmdColor.FAIL + "Translation: " + token['translation'], CmdColor.ENDC)
+            
+            case "gr":
+                if len(language.language_data['word_list']) == 0: 
+                    print("Language has no words")
+                    return False
+
+                index = random.randint(0, len(language.language_data['word_list'])-1)
+                token = language.language_data['word_list'][index]
+
+                print("Word:", token['word'])
+                input("Press enter to reveal word")
+                print("Translation:", token['translation'])
+
 
             case "add":
                 print("Add a word and it's translation to the language's database")

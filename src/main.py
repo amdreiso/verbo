@@ -22,6 +22,7 @@ def main():
     print("")
     print("Welcome to \033[95mVerbo!\033[0m")
     print("An application made for memorizing and guessing vocabulary!")
+    print("Made by amdrei")
     print("Type 'help' for instructions.")
     print("")
 

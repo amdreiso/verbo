@@ -5,6 +5,7 @@ import json
 import os
 import random
 
+from ai import get_gemini
 from deep_translator import GoogleTranslator
 from app import APP_VERSION
 
@@ -13,6 +14,8 @@ file_path = os.path.join(home, ".local", "share", "verbo")
 
 FOLDER = file_path + "/"
 kill = False
+
+ai_word_list = []
 
 # code from a guy in stackoverflow
 # dont rembember who it was and cant find it
@@ -27,6 +30,16 @@ class CmdColor:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+
+def add_word(word, translation):
+    new_word = language.Word(word, translation).to_dict() 
+
+    language.language_data['word_list'].append( new_word )
+
+    # save to file
+    with open(language.language_file, 'w') as file:
+        json.dump(language.language_data, file, indent=4)
+        print("Added a new word!")
 
 def get_translation():
     word = input(CmdColor.HEADER+"word: "+CmdColor.ENDC)
@@ -163,14 +176,55 @@ def run_command(value, cmode):
                 translation = input("translation: ")
 
                 #new_word = {'word': word, 'translation': translation}
-                new_word = language.Word(word, translation).to_dict() 
+                add_word(word, translation)
+                #new_word = language.Word(word, translation).to_dict() 
 
-                language.language_data['word_list'].append( new_word )
+                #language.language_data['word_list'].append( new_word )
 
                 # save to file
-                with open(language.language_file, 'w') as file:
-                    json.dump(language.language_data, file, indent=4)
-                    print("Added a new word!")
+                #with open(language.language_file, 'w') as file:
+                #    json.dump(language.language_data, file, indent=4)
+                #    print("Added a new word!")
+
+            case "aiword":
+                language_name = language.language_data['name']
+                word_list = "\n".join(ai_word_list).join(entry['word'] for entry in language.language_data['word_list'])
+
+                prompt = f"""write a random word in {language_name}, only a single word, no more than that, you don't have to explain anything, don't talk about anything else, the only output should be the word
+                don't repeat yourself
+                dont use these: {word_list}
+                """
+                word = get_gemini(prompt)
+                translation = get_gemini(f"""translate {word} to english, no need to explain anything, only the translation, only one translation""")
+                ai_word_list.append(f"""word: {word}, translate: {translation}""")
+                print(word, translation)
+                print("add word? Y/n ", end="")
+                i = input()
+                if (i == "n"):
+                    pass
+                else:
+                    add_word(word, translation)
+
+            case "aiphrase":
+                language_name = language.language_data['name']
+                word_list = "\n".join(ai_word_list).join(entry['word'] for entry in language.language_data['word_list'])
+
+                prompt = f"""write a random phrase in {language_name}, useful in daily conversation, you don't have to explain anything, don't talk about anything else, the only output should be the phrase
+                don't repeat yourself
+                dont use these: {word_list}
+                """
+                word = get_gemini(prompt)
+                translation = get_gemini(f"""translate {word} to english, no need to explain anything, only the translation, only one translation""")
+                ai_word_list.append(f"""word: {word}, translate: {translation}""")
+                print(word, translation)
+                print("add phrase? Y/n ", end="")
+                i = input()
+                if (i == "n"):
+                    pass
+                else:
+                    add_word(word, translation)
+
+
 
             case "del":
                 word = input("word to delete: ")

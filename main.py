@@ -26,6 +26,9 @@ def recent_files_add(path):
         recent_files.append(path)
         recent_files_save()
 
+if not os.path.exists("./languages/"):
+    os.mkdir("./languages")
+
 # =======================
 # APP SETUP
 # =======================
@@ -105,9 +108,14 @@ if recent_files:
 
 for path in recent_files:
     if os.path.exists(path):
+        name = ""
+        with open(path, "r") as file:
+            d = json.load(file)
+            name = d["name"]
+
         ctk.CTkButton(
             menu_c,
-            text=os.path.basename(path),
+            text=name,
             width=260,
             command=lambda p=path: open_recent(p), fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0
         ).pack(pady=4)
@@ -123,16 +131,20 @@ ctk.CTkLabel(make_c, text="create language", font=FONT).pack(pady=(0, 20))
 language_name = ctk.CTkEntry(make_c, width=300, placeholder_text="language name...")
 language_name.pack(pady=10)
 
+
 def language_create():
     global current_language
     name = language_name.get().strip()
     if not name:
         return
     current_language = data.Language(name)
+    print(name)
     current_language.save()
     language_title.configure(text=name)
     page_set("language")
+    recent_files_add("./languages/" + name + ".json")
 
+ctk.CTkButton(make_c, text="create", command=language_create, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).pack()
 
 # =======================
 # LANGUAGE PAGE

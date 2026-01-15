@@ -1,5 +1,3 @@
-
-from sys import maxsize
 import tkinter
 from tkinter import filedialog
 import customtkinter as ctk
@@ -8,190 +6,201 @@ import json
 from style import dark_theme
 import data
 
+# =======================
+# RECENTS
+# =======================
+
+RECENTS_PATH = "./recents.json"
+recent_files = []
+
+if os.path.exists(RECENTS_PATH):
+    with open(RECENTS_PATH, "r", encoding="utf-8") as f:
+        recent_files = json.load(f)
+
+def recent_files_save():
+    with open(RECENTS_PATH, "w", encoding="utf-8") as f:
+        json.dump(recent_files, f)
+
+def recent_files_add(path):
+    if path not in recent_files:
+        recent_files.append(path)
+        recent_files_save()
+
+# =======================
+# APP SETUP
+# =======================
+
 theme = dark_theme
 
 APP = ctk.CTk()
 APP.geometry("1280x720")
 APP.configure(fg_color=theme.foreground)
-
+APP.title("verbo")
 ctk.set_appearance_mode("dark")
 
 FONT = ctk.CTkFont("SauceCodePro Nerd Font", size=28)
 FONT_LOGO = ctk.CTkFont("SauceCodePro Nerd Font", size=38)
 
-MAIN = ctk.CTkFrame(master=APP, fg_color=theme.header)
+MAIN = ctk.CTkFrame(APP, fg_color=theme.foreground)
 MAIN.pack(fill="both", expand=True)
 
-title = ctk.CTkLabel(master=MAIN, text="verbo", font=FONT_LOGO)
-title.pack(side="top", pady=40)
+# =======================
+# PAGE SYSTEM
+# =======================
 
 pages = {}
-currentPage = "menu"
+current_page = None
 
-def page_create(name, master):
-    global theme
-    frame = ctk.CTkFrame(master=master, fg_color=theme.foreground)
-    pages[name] = frame
-    return frame
+def page_create(name):
+    page = ctk.CTkFrame(MAIN, fg_color=theme.foreground)
+    content = ctk.CTkFrame(page, fg_color="transparent")
+    content.place(relx=0.5, rely=0.5, anchor="center")
+    pages[name] = (page, content)
+    return page, content
 
-def page_set(page):
-    global currentPage
-    pages[currentPage].pack_forget()
+def page_set(name):
+    global current_page
+    if current_page:
+        pages[current_page][0].pack_forget()
+    pages[name][0].pack(fill="both", expand=True)
+    pages[name][0].focus_set()
+    current_page = name
 
-    print("page set to", page)
-    pages[page].pack(side="top", fill="both", expand=True)
-    pages[page].pack_propagate(False)
+# =======================
+# FILE ACTIONS
+# =======================
 
-    currentPage = page
+current_language = None
+current_token = None
+
+def open_recent(path):
+    global current_language
+    current_language = data.Language.load(path)
+    language_title.configure(text=current_language.name)
+    page_set("language")
 
 def open_file():
-    global current_language
     path = filedialog.askopenfilename()
-
-    current_language = data.Language.load(path)
-    language_open()
-    
-
-
-def open_folder():
-    path = filedialog.askdirectory()
-
-    print(path)
+    if not path:
+        return
+    open_recent(path)
+    recent_files_add(path)
 
 def create_file():
     page_set("create_language")
-    pass
 
-# MENU
-menu = page_create("menu", MAIN)
+# =======================
+# MENU PAGE
+# =======================
 
-center = ctk.CTkFrame(menu, fg_color="transparent")
-center.grid(row=0, column=0, columnspan=2)
+menu, menu_c = page_create("menu")
 
-menu.grid_columnconfigure(0, weight=1)
-menu.grid_columnconfigure(1, weight=1)
+ctk.CTkLabel(menu_c, text="verbo", font=FONT_LOGO).pack(pady=(0, 30))
 
-button0 = ctk.CTkButton(master=center, text="open", command=open_file, corner_radius=0)
-button0.grid(column=0, row=1, padx=5, pady=20)
-button0.grid_propagate(False)
+ctk.CTkButton(menu_c, text="open", width=260, command=open_file, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).pack(pady=8)
+ctk.CTkButton(menu_c, text="create", width=260, command=create_file, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).pack(pady=8)
 
-button1 = ctk.CTkButton(master=center, text="create", command=create_file, corner_radius=0)
-button1.grid(column=1, row=1, padx=5, pady=20)
-button1.grid_propagate(False)
+if recent_files:
+    ctk.CTkLabel(menu_c, text="recents", font=FONT).pack(pady=(30, 10))
 
+for path in recent_files:
+    if os.path.exists(path):
+        ctk.CTkButton(
+            menu_c,
+            text=os.path.basename(path),
+            width=260,
+            command=lambda p=path: open_recent(p), fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0
+        ).pack(pady=4)
 
-# CREATE LANGUAGE
-make_language = page_create("create_language", MAIN)
-current_language = None
+# =======================
+# CREATE LANGUAGE PAGE
+# =======================
 
-def language_open():
-    global language_title, current_language
-    page_set("language")
+make_language, make_c = page_create("create_language")
 
-    language_title.configure(text=current_language.name)
+ctk.CTkLabel(make_c, text="create language", font=FONT).pack(pady=(0, 20))
 
-    print("name:", current_language.name)
-
-
+language_name = ctk.CTkEntry(make_c, width=300, placeholder_text="language name...")
+language_name.pack(pady=10)
 
 def language_create():
-    # create language
-    lang = data.Language(language_name.get())
-    lang.save()
-
     global current_language
-    current_language = lang
-
-    language_open()
-    
-
-
-make_language_center = ctk.CTkFrame(make_language, fg_color="transparent")
-make_language_center.grid(row=0, column=0, columnspan=2)
-
-make_language.grid_columnconfigure(0, weight=1)
-make_language.grid_columnconfigure(1, weight=1)
-
-language_name = ctk.CTkEntry(master=make_language_center, placeholder_text="language name...", bg_color="transparent")
-language_name.grid(column=0, row=1, pady=20)
-
-language_apply_button = ctk.CTkButton(master=make_language_center, text="apply", command=language_create)
-language_apply_button.grid(column=0, row=2, pady=20)
+    name = language_name.get().strip()
+    if not name:
+        return
+    current_language = data.Language(name)
+    current_language.save()
+    language_title.configure(text=name)
+    page_set("language")
 
 
+# =======================
+# LANGUAGE PAGE
+# =======================
 
-# LANGUAGE
-language = page_create("language", MAIN)
+language, lang_c = page_create("language")
 
-language_center = ctk.CTkFrame(language, fg_color="transparent")
-language_center.grid(row=0, column=0, columnspan=3)
+language_title = ctk.CTkLabel(lang_c, text="language", font=FONT)
+language_title.pack(pady=(0, 30))
 
-language.grid_columnconfigure(0, weight=1)
-language.grid_columnconfigure(1, weight=1)
-language.grid_columnconfigure(2, weight=1)
-
-language_title = ctk.CTkLabel(master=language_center, text="language name", font=FONT)
-language_title.grid(column=0, row=1, pady=50, columnspan=3, sticky="nsew")
+controls = ctk.CTkFrame(lang_c, fg_color="transparent")
+controls.pack(pady=10)
 
 def add_token_popup():
-    global current_language
-
     overlay = ctk.CTkFrame(APP, fg_color="#000000")
     overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-    box = ctk.CTkFrame(overlay, width=420, height=260, corner_radius=0)
+    box = ctk.CTkFrame(overlay, width=420, height=260)
     box.place(relx=0.5, rely=0.5, anchor="center")
     box.pack_propagate(False)
 
-    native_entry = ctk.CTkEntry(box, placeholder_text="Native word", corner_radius=0)
-    native_entry.pack(pady=(30, 10), padx=30, fill="x")
+    native = ctk.CTkEntry(box, placeholder_text="Native word")
+    native.pack(pady=(30, 10), padx=30, fill="x")
 
-    translation_entry = ctk.CTkEntry(box, placeholder_text="Translation", corner_radius=0)
-    translation_entry.pack(pady=10, padx=30, fill="x")
+    translation = ctk.CTkEntry(box, placeholder_text="Translation")
+    translation.pack(pady=10, padx=30, fill="x")
 
     btns = ctk.CTkFrame(box, fg_color="transparent")
     btns.pack(pady=25)
 
     def submit():
-        native = native_entry.get().strip()
-        translation = translation_entry.get().strip()
-        # add token
-        if native and translation:
-            current_language.add(native, translation)
+        if native.get() and translation.get():
+            current_language.add(native.get(), translation.get())
             current_language.save()
             overlay.destroy()
 
-    ctk.CTkButton(btns, text="add", command=submit, corner_radius=0).grid(row=0, column=0, padx=10)
-    ctk.CTkButton(btns, text="exit", command=overlay.destroy, corner_radius=0).grid(row=0, column=1, padx=10)
+    ctk.CTkButton(btns, text="add", command=submit, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).grid(row=0, column=0, padx=10)
+    ctk.CTkButton(btns, text="exit", command=overlay.destroy, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).grid(row=0, column=1, padx=10)
 
-current_token = {}
+    btns.bind("<Return>", submit)
 
 def get_token():
-    global current_language, current_token
+    global current_token
     current_token = current_language.get_random_token()
-    display = current_token.native + ": ???"
-    language_display.configure(text=display)
+    language_display.configure(text=f"{current_token.native}: ???")
 
 def reveal_token():
-    global current_token
-    display = current_token.native + ": " + current_token.translation
-    language_display.configure(text=display)
+    if current_token:
+        language_display.configure(
+            text=f"{current_token.native}: {current_token.translation}"
+        )
+
+ctk.CTkButton(controls, text="add", width=120, command=add_token_popup, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).grid(row=0, column=0, padx=5)
+ctk.CTkButton(controls, text="get", width=120, command=get_token, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).grid(row=0, column=1, padx=5)
+ctk.CTkButton(controls, text="reveal", width=120, command=reveal_token, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).grid(row=0, column=2, padx=5)
+
+language_display = ctk.CTkLabel(lang_c, text="??? = ???", font=FONT_LOGO)
+language_display.pack(pady=60)
 
 
-language_add = ctk.CTkButton(master=language_center, text="add", command=add_token_popup)
-language_add.grid(column=0, row=2, padx=5)
-
-language_get = ctk.CTkButton(master=language_center, text="get", command=get_token)
-language_get.grid(column=1, row=2, padx=5)
-
-language_get = ctk.CTkButton(master=language_center, text="reveal", command=reveal_token)
-language_get.grid(column=2, row=2, padx=5)
-
-language_display = ctk.CTkLabel(master=language_center, text="??? = ???", font=FONT_LOGO)
-language_display.grid(column=0, row=10, pady=50, columnspan=3, sticky="nsew")
+# =======================
+# START
+# =======================
 
 page_set("menu")
 
+APP.bind("<Escape>", lambda e: page_set("menu"))
+language.bind("a", lambda e: add_token_popup())
 
 APP.mainloop()
 

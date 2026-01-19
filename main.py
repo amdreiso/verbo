@@ -198,7 +198,10 @@ def reveal_token():
 ctk.CTkButton(controls, text="add", font=FONT_BUTTON, width=120, command=add_token_popup, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).grid(row=0, column=0, padx=5)
 ctk.CTkButton(controls, text="get", width=120, font=FONT_BUTTON, command=get_token, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).grid(row=0, column=1, padx=5)
 ctk.CTkButton(controls, text="reveal", width=120, font=FONT_BUTTON, command=reveal_token, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).grid(row=0, column=2, padx=5)
-ctk.CTkButton(controls, text="guess", width=120, font=FONT_BUTTON, command=reveal_token, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).grid(row=0, column=3, padx=5)
+#ctk.CTkButton(controls, text="guess", width=120, font=FONT_BUTTON, command=reveal_token, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).grid(row=0, column=3, padx=5)
+
+entry = ctk.CTkEntry(language, placeholder_text="hello")
+entry.pack()
 
 
 language_display = ctk.CTkLabel(lang_c, text="??? = ???", font=FONT_LOGO)

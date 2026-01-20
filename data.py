@@ -2,16 +2,20 @@
 import json
 import random
 
-
 class Language:
     def __init__(self, name) -> None:
         self.token_list = []
         self.name = name
 
     def add(self, native, translation):
+        for token in self.token_list:
+            if token.native == native:
+                print("native word already added")
+                return
         self.token_list.append(
                 Token(native, translation)
                 )
+        print("added word", native, "=", translation)
 
     def rem(self, native):
         for token in self.token_list:
@@ -19,6 +23,7 @@ class Language:
                 self.token_list.remove(token)
 
     def get_random_token(self):
+        if len(self.token_list) == 0: return
         return random.choice(self.token_list)
 
     def list(self):
@@ -52,13 +57,13 @@ class Token:
 
     def to_dict(self):
         return {
-            "native": self.native,
-            "translation": self.translation
+            "n": self.native,
+            "t": self.translation
         }
 
     @staticmethod
     def from_dict(d):
-        return Token(d["native"], d["translation"])
+        return Token(d["n"], d["t"])
 
 
 

@@ -5,6 +5,7 @@ import random
 class Language:
     def __init__(self, name) -> None:
         self.token_list = []
+        self.streak = 0
         self.name = name
 
     def add(self, native, translation):
@@ -17,13 +18,19 @@ class Language:
                 )
         print("added word", native, "=", translation)
 
-    def rem(self, native):
+    def rem(self, tkn):
         for token in self.token_list:
-            if token.native == native:
+            if token == tkn:
                 self.token_list.remove(token)
 
+    def edit(self, tkn, n, t):
+        for token in self.token_list:
+            if token == tkn:
+                token.native = n
+                token.translation = t
+
     def get_random_token(self):
-        if len(self.token_list) == 0: return
+        if len(self.token_list) == 0: return None
         return random.choice(self.token_list)
 
     def list(self):
@@ -38,6 +45,7 @@ class Language:
         with open("./languages/"+self.name+".json", "w", encoding="utf-8") as f:
             data = {}
             data["name"] = self.name
+            data["streak"] = self.streak
             data["token_list"] = [t.to_dict() for t in self.token_list]
             json.dump(data, f)
 
@@ -46,6 +54,7 @@ class Language:
             dt = json.load(f)
 
         lang = Language(dt["name"])
+        lang.streak = dt["streak"]
         lang.token_list = [Token.from_dict(d) for d in dt["token_list"]]
         return lang
 

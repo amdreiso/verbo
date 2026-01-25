@@ -2,6 +2,7 @@
 .todo
 __pycache__/
 languages/
+config/
 
 recents.json
 

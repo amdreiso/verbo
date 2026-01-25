@@ -1,16 +1,18 @@
 import tkinter
-from tkinter import filedialog
+from tkinter import END, SE, filedialog
 import customtkinter as ctk
 import os
 import json
 import asyncio
 from googletrans import Translator
 from style import dark_theme
-from data import Language
+from data import LANGUAGE_CODES, Language
+from settings import settings
 
-async def translate_text(text, dest):
+
+async def translate_text(text, src, dest):
     async with Translator() as translator:
-        res = await translator.translate(text=text, dest=dest)
+        res = await translator.translate(text=text, dest=dest, src=src)
         return res
 
 # recent opened files
@@ -50,7 +52,7 @@ check_recents()
 
 theme = dark_theme
 
-TOKEN_ORDER = 0
+TOKEN_ORDER = settings.get("token_order", 0)
 
 APP = ctk.CTk()
 APP.geometry("1280x720")
@@ -103,11 +105,18 @@ def page_set(name):
 current_language = None
 current_token = None
 
+def language_update_stats():
+    global language_title, streak_display, current_language, language_streak
+    language_title.configure(text=current_language.name)
+    streak_display.configure(text=f"current streak = 0 | max streak = {current_language.streak}")
+    language_token_count.configure(text=f"tokens = {len(current_language.token_list)}")
+
 def open_recent(path):
     global current_language, language_streak, streak_display
     current_language = Language.load(path)
-    language_title.configure(text=current_language.name)
-    streak_display.configure(text=f"current streak = 0 | max streak = {current_language.streak}")
+
+    language_update_stats()
+    
     page_set("language")
     language_streak = 0
 
@@ -130,31 +139,14 @@ menu, menu_c = page_create("menu")
 
 ctk.CTkLabel(menu_c, text="verbo", font=FONT_LOGO).pack(pady=(0, 30))
 
-def change_token_order(button):
-    global TOKEN_ORDER
-    if TOKEN_ORDER == 0:
-        TOKEN_ORDER = 1
-        button.configure(text="translation: native")
-    else:
-        TOKEN_ORDER = 0
-        button.configure(text="native: translation")
-
 ctk.CTkButton(menu_c, text="open", font=FONT_BUTTON, width=260, command=open_file, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).pack(pady=8)
 
 ctk.CTkButton(menu_c, text="create", font=FONT_BUTTON, width=260, command=create_file, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).pack(pady=8)
 
-token_order_button = ctk.CTkButton(
-    menu_c, 
-    text="native: translation", 
-    font=FONT_BUTTON, 
-    width=260, 
-    fg_color=theme.button, 
-    hover_color=theme.button_hover, 
-    corner_radius=0
-)
+def settings_open():
+    page_set("settings")
 
-token_order_button.pack(pady=8)
-token_order_button.configure(command=lambda b=token_order_button: change_token_order(b))
+ctk.CTkButton(menu_c, text="settings", font=FONT_BUTTON, width=260, command=settings_open, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).pack(pady=8)
 
 ctk.CTkLabel(menu_c, text="recents", font=FONT).pack(pady=(30, 10))
 
@@ -190,6 +182,50 @@ def create_recent_buttons():
 create_recent_buttons()
 
 
+# settings page
+settings_page, settings_c = page_create("settings")
+
+ctk.CTkLabel(settings_c, text="Settings", font=FONT).pack(pady=20)
+
+def change_token_order(button):
+    global TOKEN_ORDER
+    if TOKEN_ORDER == 0:
+        TOKEN_ORDER = 1
+        button.configure(text="translation: native")
+    else:
+        TOKEN_ORDER = 0
+        button.configure(text="native: translation")
+    settings.set("token_order", TOKEN_ORDER)
+
+token_order_button = ctk.CTkButton(
+    master=settings_c, 
+    text="native: translation", 
+    font=FONT_BUTTON, 
+    width=260, 
+    fg_color=theme.button, 
+    hover_color=theme.button_hover, 
+    corner_radius=0
+)
+if TOKEN_ORDER == 0:
+    token_order_button.configure(text="native: translation")
+else:
+    token_order_button.configure(text="translation: native")
+
+token_order_button.pack(pady=8)
+token_order_button.configure(command=lambda b=token_order_button: change_token_order(b))
+
+default_code_entry = ctk.CTkEntry(settings_c, placeholder_text="")
+default_code_entry.insert(0, settings.get("default_language_code"))
+default_code_entry.pack(pady=10)
+
+def settings_save():
+    val = default_code_entry.get()
+    if val in LANGUAGE_CODES: 
+        settings.set("default_language_code", val)
+
+settings_apply = ctk.CTkButton(settings_c, text="apply", command=lambda: settings_save(), font=FONT_BUTTON, hover_color=theme.button_hover, fg_color=theme.button, corner_radius=0)
+settings_apply.pack(pady=(100, 0))
+
 # create language file 'popup'
 
 make_language, make_c = page_create("create_language")
@@ -199,20 +235,27 @@ ctk.CTkLabel(make_c, text="create language", font=FONT).pack(pady=(0, 20))
 language_name = ctk.CTkEntry(make_c, width=300, placeholder_text="language name...")
 language_name.pack(pady=10)
 
+language_code = ctk.CTkEntry(make_c, width=300, placeholder_text="language code 'en', 'de', 'ru', 'gr', etc...")
+language_code.pack(pady=10)
 
 def language_create():
     global current_language
     name = language_name.get().strip()
     if not name:
         return
-    current_language = Language(name)
+
+    code = language_code.get()
+    if not code or not code in LANGUAGE_CODES:
+        return
+
+    current_language = Language(name, code)
     current_language.save()
     language_title.configure(text=name)
     page_set("language")
     newpath = os.getcwd() + "/languages/" + name + ".json"
     recent_files_add(newpath)
 
-ctk.CTkButton(make_c, font=FONT_BUTTON, text="create", command=language_create, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).pack()
+ctk.CTkButton(make_c, font=FONT_BUTTON, text="create", command=language_create, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0).pack(pady=10)
 
 
 # language page
@@ -220,8 +263,11 @@ ctk.CTkButton(make_c, font=FONT_BUTTON, text="create", command=language_create, 
 language, lang_c = page_create("language")
 language_streak = 0
 
-language_title = ctk.CTkLabel(lang_c, text="language", font=FONT)
+language_title = ctk.CTkLabel(master=lang_c, text="language", font=FONT)
 language_title.pack()
+
+language_token_count = ctk.CTkLabel(master=lang_c, text="tokens = 0", font=FONT_BUTTON)
+language_token_count.pack()
 
 current_streak = 0
 
@@ -260,9 +306,9 @@ def add_token_popup():
     native = ctk.CTkEntry(box, placeholder_text="Native word")
     native.pack(pady=(0, 10), padx=30, fill="x")
 
-    ctk.CTkLabel(master=box, text="the result of the translation will be sent here", font=FONT_SMALL, justify="left").pack(pady=(10, 0))
+    ctk.CTkLabel(master=box, text="the result of the translation will be sent here", font=FONT_SMALL, justify="left").pack()
     translation = ctk.CTkEntry(box, placeholder_text="Translation")
-    translation.pack(pady=10, padx=30, fill="x")
+    translation.pack(padx=30, fill="x")
 
     # Translate option
     translate_menu = ctk.CTkFrame(box, fg_color="transparent")
@@ -270,16 +316,31 @@ def add_token_popup():
 
     def translate():
         if native.get().replace(" ", "") == "" and translate_entry_to.get().replace(" ", "") == "": return
-        result = asyncio.run(translate_text(native.get(), translate_entry_to.get()))
+
+        result = asyncio.run(translate_text(native.get(), translate_entry_from.get(), translate_entry_to.get()))
+
+        translation.delete(0, END)
         translation.insert(0, result.text)
 
-    translate_entry_from = ctk.CTkEntry(translate_menu)
-    translate_entry_from.grid(row=0, column=0, padx=10)
-    translate_entry_from.insert(0, "en")
+    lang1 = ""
+    lang2 = ""
 
-    translate_entry_to = ctk.CTkEntry(translate_menu)
+    if TOKEN_ORDER == 0:
+        #native
+        lang1 = settings.get("default_language_code")
+        lang2 = current_language.code
+    else:
+        #translation
+        lang2 = settings.get("default_language_code")
+        lang1 = current_language.code
+
+    translate_entry_from = ctk.CTkEntry(translate_menu, placeholder_text="native: 'en' 'es' 'ru' 'pt' 'de'...")
+    translate_entry_from.grid(row=0, column=0, padx=10)
+    translate_entry_from.insert(0, lang1)
+
+    translate_entry_to = ctk.CTkEntry(translate_menu, placeholder_text="translation: 'en' 'es' 'ru' 'pt' 'de'...")
     translate_entry_to.grid(row=0, column=2, padx=10)
-    translate_entry_to.insert(0, "de")
+    translate_entry_to.insert(0, lang2)
 
     translate_button = ctk.CTkButton(translate_menu, text="translate", 
                                      font=FONT_BUTTON, command=translate, fg_color=theme.button, hover_color=theme.button_hover, corner_radius=0)
@@ -294,16 +355,21 @@ def add_token_popup():
             global popup
             popup = False
 
-            t = translation.get().replace(" ", "").split(",")
+            t = translation.get()
+            if "," in t:
+                t = t.replace(" ", "").split(",")
             print(t)
             if len(t) == 1: t = t[0]
-
-            n = native.get().replace(" ", "").split(",")
+            
+            n = native.get()
+            if "," in t:
+                n = n.replace(" ", "").split(",")
             print(n)
             if len(n) == 1: n = n[0]
 
             current_language.add(n, t)
             current_language.save()
+            language_update_stats()
             overlay.destroy()
 
     def destroy():
@@ -333,6 +399,10 @@ def edit_token_popup():
     native.pack(pady=(30, 10), padx=30, fill="x")
 
     ti = ', '.join(str(x) for x in current_token.translation)
+    ti = current_token.translation
+    if isinstance(ti, list):
+        ti = ", ".join(ti)
+
     translation = ctk.CTkEntry(box, placeholder_text="Translation")
     translation.insert(0, ti)
     translation.pack(pady=10, padx=30, fill="x")
@@ -344,12 +414,16 @@ def edit_token_popup():
         if native.get() and translation.get():
             global popup
             popup = False
-
-            t = translation.get().replace(" ", "").split(",")
+            
+            t = translation.get()
+            if "," in t:
+                t = t.replace(" ", "").split(",")
             print(t)
             if len(t) == 1: t = t[0]
-
-            n = native.get().replace(" ", "").split(",")
+            
+            n = native.get()
+            if "," in t:
+                n = n.replace(" ", "").split(",")
             print(n)
             if len(n) == 1: n = n[0]
 
@@ -505,9 +579,16 @@ page_set("menu")
 
 APP.bind("<Escape>", lambda e: page_set("menu"))
 APP.bind("<Control-a>", lambda e: add_token_popup())
+APP.bind("<Control-e>", lambda e: edit_token_popup())
 APP.bind("<Control-g>", lambda e: get_token())
 APP.bind("<Control-r>", lambda e: reveal_token())
 APP.bind("<Return>", lambda e: check_guess())
 
-APP.mainloop()
+def main():
+    APP.mainloop()
+
+if __name__ == "__main__":
+    main()
+
+
 

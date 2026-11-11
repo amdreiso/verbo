@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
 #include "verbo.h"
 
 const char *TITLE = "verbo";
@@ -14,6 +15,7 @@ ePage page = HOME;
 
 Tokens tokens = {0};
 Token current_token = { "Eisenfaust", "Iron fist" };
+bool token_revealed = false;
 
 void filesystem();
 void handle_event(struct tb_event *event);
@@ -31,6 +33,7 @@ int main(int argc, char** argv)
 	open_book("deutsch");
 
 	while (running) {
+		tb_clear();
 		render();
 
 		tb_present();
@@ -53,7 +56,7 @@ void open_book(const char *filename)
 
 	if (f != NULL) {
 		tb_printf(0, 0, 0, 0, "Opened book '%s'", filename);
-		int y = 2;
+		int y = 4;
 
 		while (fgets(line, sizeof(line), f)) {
 			char *tkn;
@@ -70,9 +73,21 @@ void open_book(const char *filename)
 				tkn = strtok(NULL, ",");
 			}
 
-			tb_printf(0, y++, 0, 0, "%s : %s", left, right);
-		}
+			tb_printf(tb_width()/2, y++, 0, 0, "%s : %s", left, right);
 
+			if (tokens.count >= tokens.capacity) {
+				if (tokens.capacity == 0) tokens.capacity = 256;
+				else tokens.capacity *= 2;
+
+				tokens.items = realloc(tokens.items, tokens.capacity * sizeof(*tokens.items));
+			}
+
+			Token t = {0};
+			strcpy(t.native, left);
+			strcpy(t.translation, right);
+
+			tokens.items[tokens.count++] = t;
+		}
 		fclose(f);
 	} else {
 		running = false;
@@ -112,7 +127,7 @@ void render()
 void token_render(Token *token)
 {
 	char str[256];
-	char *t = (token->revealed) ? token->translation : "???";
+	char *t = (token_revealed) ? token->translation : "???";
 	snprintf(str, sizeof(str), "%s : %s", token->native, t);
 
 	tb_print(tb_width()/2 - strlen(str)/2, tb_height()/2, 0, 0, str);
@@ -128,7 +143,13 @@ void handle_event(struct tb_event *e)
 
 	switch (e->ch) {
 		case 'r':
-			current_token.revealed = true;
+			token_revealed = true;
+			break;
+
+		case 'g':
+			int index = rand() % tokens.count;
+			Token t = tokens.items[index];
+			tb_printf(0, 10, 0, 0, "index: %d native: %s translation: %s", index, t.native, t.translation);
 			break;
 	}
 }

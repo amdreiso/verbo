@@ -5,13 +5,12 @@
 typedef struct {
 	char native[256];
 	char translation[256];
-	bool revealed;
 } Token;
 
 typedef struct {
 	Token *items;
-	size_t count;
-	size_t capacity;
+	int count;
+	int capacity;
 } Tokens;
 
 typedef enum {
